@@ -20,7 +20,7 @@ export default [
     },
   },
   {
-    ignores: ['node_modules', 'dist', 'build', 'out', 'eslint.config.js'],
+    ignores: ['node_modules', 'dist', 'build', 'out', 'eslint.config.js', 'drizzle'],
   },
   {
     rules: {
