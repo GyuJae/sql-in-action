@@ -10,7 +10,7 @@ describe('Data Definition Language With SQLite', () => {
   const db = drizzle(sqlite, { casing: 'snake_case' });
 
   beforeEach(() => {
-    const tables = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table';").all();
+    const tables = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name != 'sqlite_sequence';").all();
 
     for (const table of tables) {
       // @ts-ignore
