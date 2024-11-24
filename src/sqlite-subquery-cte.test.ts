@@ -1,5 +1,5 @@
 import { movies } from 'drizzle/schema';
-import { gt, sql } from 'drizzle-orm';
+import { eq, gt, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { describe, expect, test } from 'vitest';
 
@@ -53,5 +53,44 @@ describe('Subqueries and CTEs', () => {
       .where(gt(movies.revenue, sql<number>`(SELECT value FROM avg_revenue)`));
 
     expect(result.length).toBe(2761);
+  });
+
+  /*
+  SELECT 
+    main.title,
+    main.director,
+    main.rating
+  FROM movies as main
+  WHERE main.rating > (
+    SELECT AVG(sub.rating) 
+    FROM movies as sub 
+    WHERE sub.year = main.year
+  );
+  --- 엄청 느림;;
+   */
+  test('Correlated Subqueries: 같은 해에 개봉된 영화의 평균 평점보다 높은 평점을 가진 영화 조회', async () => {
+    const avgRatingByYear = db.$with('avg_rating_by_year').as(
+      db
+        .select({
+          year: movies.releaseDate,
+          avgRating: sql<number>`AVG(rating)`.as('avg_rating'),
+        })
+        .from(movies)
+        .groupBy(movies.releaseDate),
+    );
+
+    const result = await db
+      .with(avgRatingByYear)
+      .select({
+        title: movies.title,
+        director: movies.director,
+        rating: movies.rating,
+        releaseDate: movies.releaseDate,
+      })
+      .from(movies)
+      .innerJoin(avgRatingByYear, eq(movies.releaseDate, avgRatingByYear.year))
+      .where(gt(movies.rating, avgRatingByYear.avgRating));
+
+    expect(result.length).toBe(99_575);
   });
 });
